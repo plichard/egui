@@ -23,6 +23,7 @@ mod window_settings;
 pub use window_settings::WindowSettings;
 
 use ahash::HashSet;
+use egui::{TextInputState, TextSpan};
 use raw_window_handle::HasDisplayHandle;
 
 use winit::{
@@ -100,6 +101,7 @@ pub struct State {
 
     /// track ime state
     has_sent_ime_enabled: bool,
+    text_input_last_frame: bool,
 
     #[cfg(feature = "accesskit")]
     accesskit: Option<accesskit_winit::Adapter>,
@@ -142,6 +144,7 @@ impl State {
             pointer_touch_id: None,
 
             has_sent_ime_enabled: false,
+            text_input_last_frame: false,
 
             #[cfg(feature = "accesskit")]
             accesskit: None,
@@ -381,6 +384,27 @@ impl State {
                     consumed: self.egui_ctx.wants_keyboard_input(),
                 }
             }
+
+            WindowEvent::TextInputState(state) => {
+                self.egui_input
+                    .events
+                    .push(egui::Event::TextInputState(TextInputState {
+                        text: state.text.clone(),
+                        selection: TextSpan {
+                            start: state.selection.start,
+                            end: state.selection.end,
+                        },
+                        compose_region: state.compose_region.as_ref().map(|r| TextSpan {
+                            start: r.start,
+                            end: r.end,
+                        }),
+                    }));
+                EventResponse {
+                    repaint: true,
+                    consumed: self.egui_ctx.wants_keyboard_input(),
+                }
+            }
+
             WindowEvent::KeyboardInput {
                 event,
                 is_synthetic,
@@ -413,6 +437,7 @@ impl State {
                     }
                 }
             }
+
             WindowEvent::Focused(focused) => {
                 self.egui_input.focused = *focused;
                 self.egui_input
@@ -1872,7 +1897,7 @@ pub fn short_window_event_description(event: &winit::event::WindowEvent) -> &'st
         WindowEvent::HoveredFileCancelled { .. } => "WindowEvent::HoveredFileCancelled",
         WindowEvent::Focused { .. } => "WindowEvent::Focused",
         WindowEvent::KeyboardInput { .. } => "WindowEvent::KeyboardInput",
-        WindowEvent::TextInput { .. } => "WindowEvent::TextInput",
+        WindowEvent::TextInputState { .. } => "WindowEvent::TextInputState",
         WindowEvent::ModifiersChanged { .. } => "WindowEvent::ModifiersChanged",
         WindowEvent::Ime { .. } => "WindowEvent::Ime",
         WindowEvent::CursorMoved { .. } => "WindowEvent::CursorMoved",

@@ -868,6 +868,7 @@ impl State {
             ime,
             #[cfg(feature = "accesskit")]
             accesskit_update,
+            text_input_state,
             num_completed_passes: _,    // `egui::Context::run` handles this
             request_discard_reasons: _, // `egui::Context::run` handles this
         } = platform_output;
@@ -896,12 +897,31 @@ impl State {
             self.clipboard.set_text(copied_text);
         }
 
-        let allow_ime = ime.is_some();
-        if self.allow_ime != allow_ime {
-            self.allow_ime = allow_ime;
-            profiling::scope!("set_ime_allowed");
-            window.set_ime_allowed(allow_ime);
+        if let Some(text_input_state) = text_input_state {
+            window.set_text_input_state(winit::event::TextInputState {
+                text: text_input_state.text,
+                selection: winit::event::TextSpan {
+                    start: text_input_state.selection.start,
+                    end: text_input_state.selection.end,
+                },
+                compose_region: text_input_state
+                    .compose_region
+                    .map(|r| winit::event::TextSpan {
+                        start: r.start,
+                        end: r.end,
+                    }),
+            });
         }
+    
+        let text_input_this_frame = ime.is_some();
+        if self.text_input_last_frame != text_input_this_frame {
+            if text_input_this_frame {
+                window.begin_ime_input();
+            } else {
+                window.end_ime_input();
+            }
+        }
+        self.text_input_last_frame = text_input_this_frame;
 
         if let Some(ime) = ime {
             let pixels_per_point = pixels_per_point(&self.egui_ctx, window);

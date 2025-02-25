@@ -1,6 +1,6 @@
 //! All the data egui returns to the backend at the end of each frame.
 
-use crate::{RepaintCause, ViewportIdMap, ViewportOutput, WidgetType};
+use crate::{RepaintCause, TextInputState, ViewportIdMap, ViewportOutput, WidgetType};
 
 /// What egui emits each frame from [`crate::Context::run`].
 ///
@@ -140,6 +140,8 @@ pub struct PlatformOutput {
     ///
     /// Useful for IME.
     pub ime: Option<IMEOutput>,
+    
+    pub text_input_state: Option<TextInputState>,
 
     /// The difference in the widget tree since last frame.
     ///
@@ -197,6 +199,7 @@ impl PlatformOutput {
             ime,
             #[cfg(feature = "accesskit")]
             accesskit_update,
+            text_input_state,
             num_completed_passes,
             mut request_discard_reasons,
         } = newer;
@@ -212,6 +215,11 @@ impl PlatformOutput {
         self.events.append(&mut events);
         self.mutable_text_under_cursor = mutable_text_under_cursor;
         self.ime = ime.or(self.ime);
+        
+        if text_input_state.is_some() {
+            self.text_input_state = text_input_state;
+        }
+        
         self.num_completed_passes += num_completed_passes;
         self.request_discard_reasons
             .append(&mut request_discard_reasons);

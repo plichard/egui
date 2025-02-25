@@ -276,8 +276,6 @@ impl State {
         }
 
         use winit::event::WindowEvent;
-
-        log::error!("Window event: {:?}", event);
         match event {
             WindowEvent::ScaleFactorChanged { scale_factor, .. } => {
                 let native_pixels_per_point = *scale_factor as f32;
@@ -351,7 +349,6 @@ impl State {
                 //
                 // We use input_method_editor_started to manually insert CompositionStart
                 // between Commits.
-                log::error!("IME event received: {:?}", ime);
                 match ime {
                     winit::event::Ime::Enabled => {
                         if cfg!(target_os = "linux") {
@@ -410,11 +407,6 @@ impl State {
                 is_synthetic,
                 ..
             } => {
-                log::error!(
-                    "KeyboardInput event received: {:?}, is_synthetic: {}",
-                    event,
-                    is_synthetic
-                );
                 // Winit generates fake "synthetic" KeyboardInput events when the focus
                 // is changed to the window, or away from it. Synthetic key presses
                 // represent no real key presses and should be ignored.
